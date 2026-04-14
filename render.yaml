@@ -1,0 +1,22 @@
+# ─── Render Blueprint ─────────────────────────────────────────
+# Deploy backend to Render free tier
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: biofusion-ai-backend
+    runtime: python
+    plan: free
+    region: oregon
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: CACHE_DIR
+        value: /tmp/cache
+      - key: LOG_LEVEL
+        value: INFO
+      - key: PYTHON_VERSION
+        value: 3.11.6
+    healthCheckPath: /health
+    autoDeploy: true
