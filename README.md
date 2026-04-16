@@ -1,145 +1,102 @@
-# BioFusion AI — Free Edition
+# BioFusion — The High-Fidelity AI Discovery Engine
 
-**Zero-cost bioinformatics data fusion platform.**
+**A zero-cost, professional-grade bioinformatics platform for drug discovery, genomic analysis, and clinical research.**
 
-Search genes, variants, drugs, and diseases across 9 free biological APIs — UniProt, Ensembl, ClinVar (via MyVariant.info), ChEMBL, RxNorm, Open Targets, Reactome, KEGG, and STRING-DB.
-
----
-
-## Features
-
-| Feature | Description |
-|---------|-------------|
-| **Unified Search** | Auto-detects query type (gene / variant / drug / disease) |
-| **Gene Explorer** | Protein info, disease associations, pathways (lazy loaded) |
-| **Variant Analysis** | ClinVar significance + CADD scoring + risk classification |
-| **Drug Lookup** | Molecular properties, mechanisms, gene targets |
-| **Disease Profiling** | Associated genes, known drugs, ICD-10 code mapping |
-| **PPI Network** | STRING-DB interactions ≤20 nodes with Canvas2D visualization |
-| **File-Based Cache** | 7-day TTL, per-category JSON cache — zero paid infrastructure |
-| **Rate Limiting** | Per-service async rate limiter to prevent API bans |
-| **Retry Logic** | 2 retries with exponential backoff on all external calls |
-| **Partial Responses** | Returns available data + warnings if any API fails |
+BioFusion integrates 10+ biological data sources into a unified, high-performance workbench, featuring AI-driven synthesis and professional research dossiers—all running on a 100% free infrastructure.
 
 ---
 
-## Architecture
+## 🔥 New in v2.0: The Research Evolution
+
+- **🧬 High-Fidelity Target Resolution**: Advanced recursive fallback in the ChEMBL integration correctly resolves mechanisms for drug salts (e.g., Imatinib Mesylate) to their parent molecules.
+- **📄 Professional Research Dossiers**: Direct workbench-to-PDF engine that fetches full scientific profiles, clinical summaries, and AI synthesis for pinned items.
+- **🏥 Clinical Investigation Suite**: Real-time integration with ClinicalTrials.gov to fetch active studies, phases, and recruitment status for drug candidates.
+- **🧪 AI-Driven Synthesis**: Hybrid AI pipelines (via Pollinations) that summarize complex multi-source data into human-readable dossiers.
+- **✨ Premium Clinical Interface**: A sterile clinical aesthetic with glassmorphism components, dark-mode optimization, and enterprise-grade accessibility.
+
+---
+
+## 🛠 Features
+
+| Category | Capability |
+|----------|------------|
+| **Unified Search** | Intelligent query detection for Gene, Variant, Drug, and Disease types. |
+| **Workbench** | Session-persistent item collection for multi-entity research and reporting. |
+| **Gene Explorer** | Protein architecture, disease associations, KEGG/Reactome pathways. |
+| **Variant Analysis** | ClinVar significance, CADD deleterious scoring, and risk classification. |
+| **Discovery Engine** | Molecular properties, recursive mechanism lookups, and primary targets. |
+| **Disease Profiling** | ICD-10 mapping, associated genes, and known drug indications. |
+| **PPI Network** | Interactive STRING-DB interaction networks via high-performance Canvas2D. |
+| **Smart Caching** | Multi-tier file-based TTL cache to maximize speed while respecting API limits. |
+
+---
+
+## 🏗 Architecture
 
 ```
 biofusion-ai/
-├── backend/              FastAPI + httpx + SQLite + file cache
-│   ├── main.py           App entry point + lifespan
-│   ├── config.py         All settings & API URLs
-│   ├── database.py       SQLite search history
-│   ├── cache_manager.py  File-based TTL cache
-│   ├── fusion_engine.py  Data merge, normalize, score
-│   ├── services/         9 API client modules
-│   │   ├── base_client.py    Shared httpx + retry + rate limit
-│   │   ├── uniprot.py        Gene → Protein
-│   │   ├── ensembl.py        Gene lookup + IDs
-│   │   ├── myvariant.py      Variant annotation (ClinVar/CADD)
-│   │   ├── chembl.py         Drug search + targets
-│   │   ├── rxnorm.py         Drug normalization
-│   │   ├── opentargets.py    Disease associations (GraphQL)
-│   │   ├── reactome.py       Pathways
-│   │   ├── kegg.py           Pathways (text API)
-│   │   └── string_db.py      PPI network
-│   ├── api/              6 route modules
-│   │   ├── search.py     /search?q=
-│   │   ├── gene.py       /gene/{id}
-│   │   ├── variant.py    /variant/{id}
-│   │   ├── drug.py       /drug/{id}
-│   │   ├── disease.py    /disease/{id}
-│   │   └── network.py    /network/{gene}
-│   └── data/
-│       └── icd10_codes.json  182 curated ICD-10 codes
+├── backend/              FastAPI + Async HTTPX + SQLite + File Cache
+│   ├── fusion_engine.py  Data normalization & multi-source merging
+│   ├── services/         API interaction layer (10+ sources)
+│   │   ├── ai_service.py     AI Synthesis pipeline (Pollinations)
+│   │   ├── chembl.py         Recursive target resolver
+│   │   ├── clinical_trials.py ClinicalTrials.gov client
+│   │   └── ...               (UniProt, Ensembl, STRING-DB, etc.)
+│   └── api/              Feature-driven routing
 │
-├── frontend/             React + Vite
-│   └── src/
-│       ├── App.jsx       Routing + navbar
-│       ├── index.css     Dark bioinformatics design system
-│       ├── api/client.js Backend API wrapper
-│       ├── components/   Shared UI components
-│       └── pages/        Explorer, Gene, Variant, Drug, Disease, Network
+├── frontend/             Vite + React + Tailwind + Canvas2D
+│   ├── src/components/   BioFusion UI System (Glassmorphism)
+│   ├── src/pages/        Scientific detail views & Discovery views
+│   └── src/context/      Workbench & Session management
 │
-├── Dockerfile            Backend container
-├── render.yaml           Render free-tier blueprint
-└── .gitignore
+└── ...
 ```
 
 ---
 
-## Quick Start
+## 🚀 Getting Started
 
 ### Prerequisites
-- Python 3.7+ (backend)
-- Node.js 18+ (frontend)
+- **Python 3.9+** (Backend)
+- **Node.js 18+** (Frontend)
 
-### Run Locally
+### Installation
 
 ```bash
-# 1. Backend
+# Clone the repository
+git clone https://github.com/Johnashraf7/Biofusion.git
+cd Biofusion
+
+# 1. Start the Backend Infrastructure
 cd backend
 pip install -r requirements.txt
-python -m uvicorn main:app --host 0.0.0.0 --port 8000
+python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
-# 2. Frontend (new terminal)
+# 2. Launch the High-Fidelity UI (In a new terminal)
 cd frontend
 npm install
 npm run dev
 ```
 
-Open **http://localhost:5173** in your browser.
+Visit **http://localhost:5173** to begin your discovery.
 
 ---
 
-## API Endpoints
+## 🔌 API Service Map
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/search?q={query}&type={gene\|variant\|drug\|disease}` | Unified search |
-| GET | `/gene/{id}?include=pathways,kegg` | Gene report |
-| GET | `/variant/{id}` | Variant annotation |
-| GET | `/drug/{id}` | Drug details + targets |
-| GET | `/disease/{id}` | Disease profile + ICD-10 |
-| GET | `/network/{gene}?limit=20` | PPI network |
-| GET | `/health` | Health check |
-| GET | `/stats` | System statistics |
-| GET | `/docs` | Swagger UI |
-
----
-
-## Deploy (Free Tier)
-
-### Backend → Render
-1. Push to GitHub
-2. Connect repo on [render.com](https://render.com)
-3. Use the included `render.yaml` blueprint
-4. Set root directory to `backend`
-
-### Frontend → Vercel
-1. Connect repo on [vercel.com](https://vercel.com)
-2. Set root directory to `frontend`
-3. Add env var: `VITE_API_URL=https://your-render-url.onrender.com`
-4. Deploy
+| Service | Data Domain |
+|---------|-------------|
+| **ChEMBL** | Primary Drug Targets & Mechanisms |
+| **ClinicalTrials.gov** | Real-time Clinical Investigations |
+| **Open Targets** | Genetic Evidence & Disease Associations |
+| **Ensembl / UniProt** | Protein Structure & Genomic Context |
+| **ClinVar / MyVariant** | Clinical Variant Significance |
+| **STRING-DB** | Protein-Protein Interaction Networks |
+| **KEGG / Reactome** | Biological Pathway Mapping |
+| **Pollinations AI** | Dossier Synthesis & Scientific Summaries |
 
 ---
 
-## Constraints Honored
-
-- ✅ NO paid APIs
-- ✅ NO paid databases (SQLite only)
-- ✅ NO Redis
-- ✅ NO PostgreSQL
-- ✅ NO OMIM
-- ✅ File-based caching with TTL
-- ✅ Rate limit protection on all APIs
-- ✅ Network graph ≤20 nodes
-- ✅ Lazy loading for pathways
-- ✅ Partial data + warnings on API failure
-
----
-
-## License
-
-MIT — Free for academic and personal use. Individual API data sources have their own terms.
+## ⚖️ License
+**MIT** — Free for academic, personal, and professional research.
+*Note: Individual data sources remain subject to their respective licensing terms.*
