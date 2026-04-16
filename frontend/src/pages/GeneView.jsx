@@ -1,10 +1,15 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { api } from "../api/client";
+import { useWorkbench } from "../context/WorkbenchContext";
 import { LoadingSpinner, WarningBanner, Badge, ScoreBar, DetailRow, EmptyState } from "../components/Shared";
+import AISynthesis from "../components/AISynthesis";
 
 export default function GeneView() {
   const { id } = useParams();
+  const { togglePin, isPinned } = useWorkbench();
+  const pinned = isPinned(id, "gene");
+  
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [pathwaysLoading, setPathwaysLoading] = useState(false);
@@ -38,21 +43,43 @@ export default function GeneView() {
 
   return (
     <div className="fade-in">
-      <div className="page-header">
-        <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
-          <h1>{data.gene_symbol || id}</h1>
-          {data.ensembl_id && <Badge variant="cyan">{data.ensembl_id}</Badge>}
-          {data.uniprot_accession && <Badge variant="blue">UniProt: {data.uniprot_accession}</Badge>}
-          {data.biotype && <Badge variant="muted">{data.biotype}</Badge>}
+      <div className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+            <h1>{data.gene_symbol || id}</h1>
+            {data.ensembl_id && <Badge variant="cyan">{data.ensembl_id}</Badge>}
+            {data.uniprot_accession && <Badge variant="blue">UniProt: {data.uniprot_accession}</Badge>}
+            {data.biotype && <Badge variant="muted">{data.biotype}</Badge>}
+          </div>
+          {data.description && (
+            <p style={{ color: "var(--text-secondary)", marginTop: "0.5rem" }}>
+              {data.description.replace(/\[Source:.*\]/, "").trim()}
+            </p>
+          )}
         </div>
-        {data.description && (
-          <p style={{ color: "var(--text-secondary)", marginTop: "0.5rem" }}>
-            {data.description.replace(/\[Source:.*\]/, "").trim()}
-          </p>
-        )}
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          <Link 
+            to={`/network/${data.gene_symbol || id}`}
+            className="btn-glass"
+            style={{ fontSize: "0.9rem", padding: "0.5rem 1rem", color: "var(--accent-cyan)" }}
+          >
+            🕸️ View Network
+          </Link>
+          <button 
+            onClick={() => togglePin({ id, type: "gene", name: data.gene_symbol })}
+            className={pinned ? "btn-active" : "btn-glass"}
+            style={{ fontSize: "0.9rem", padding: "0.5rem 1rem" }}
+          >
+            {pinned ? "★ Pinned" : "☆ Pin to Workbench"}
+          </button>
+        </div>
       </div>
 
       <WarningBanner warnings={data.warnings} />
+
+      <div style={{ marginBottom: "1.5rem" }}>
+        <AISynthesis type="gene" data={data} />
+      </div>
 
       <div className="card-grid">
         {/* Genomic Info */}
@@ -66,13 +93,11 @@ export default function GeneView() {
           <DetailRow label="Chromosome" value={data.chromosome} />
           <DetailRow label="Position" value={data.position} />
           <DetailRow label="Biotype" value={data.biotype} />
-          {data.ensembl_id && (
-            <DetailRow label="Network" value={
-              <Link to={`/network/${data.gene_symbol || id}`} className="btn btn-sm" style={{marginTop: "0.3rem"}}>
-                View PPI Network →
-              </Link>
-            } />
-          )}
+          <DetailRow label="Network" value={
+            <Link to={`/network/${data.gene_symbol || id}`} className="btn btn-sm" style={{marginTop: "0.3rem"}}>
+              View PPI Network →
+            </Link>
+          } />
         </div>
 
         {/* Protein Info */}

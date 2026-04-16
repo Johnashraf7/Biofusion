@@ -1,10 +1,14 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { api } from "../api/client";
+import { useWorkbench } from "../context/WorkbenchContext";
 import { LoadingSpinner, WarningBanner, RiskBadge, DetailRow, EmptyState, Badge } from "../components/Shared";
 
 export default function VariantView() {
   const { id } = useParams();
+  const { togglePin, isPinned } = useWorkbench();
+  const pinned = isPinned(id, "variant");
+  
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -23,16 +27,25 @@ export default function VariantView() {
 
   return (
     <div className="fade-in">
-      <div className="page-header">
-        <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
-          <h1>{data.rsid || data.variant_id}</h1>
-          <RiskBadge level={risk.risk_level || "uncertain"} />
+      <div className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+            <h1>{data.rsid || data.variant_id}</h1>
+            <RiskBadge level={risk.risk_level || "uncertain"} />
+          </div>
+          {data.variant_id !== data.rsid && (
+            <p style={{ color: "var(--text-muted)", marginTop: "0.3rem" }}>
+              <code>{data.variant_id}</code>
+            </p>
+          )}
         </div>
-        {data.variant_id !== data.rsid && (
-          <p style={{ color: "var(--text-muted)", marginTop: "0.3rem" }}>
-            <code>{data.variant_id}</code>
-          </p>
-        )}
+        <button 
+          onClick={() => togglePin({ id, type: "variant", name: data.rsid || data.variant_id })}
+          className={pinned ? "btn-active" : "btn-glass"}
+          style={{ fontSize: "0.9rem", padding: "0.5rem 1rem" }}
+        >
+          {pinned ? "★ Pinned" : "☆ Pin to Workbench"}
+        </button>
       </div>
 
       <WarningBanner warnings={data.warnings} />

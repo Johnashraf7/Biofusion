@@ -6,11 +6,12 @@ Drug information with targets and mechanisms.
 import asyncio
 import logging
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
+from typing import List, Optional
 
 from cache_manager import cache
 from fusion_engine import merge_drug_data
-from services import chembl, rxnorm
+from services import chembl, rxnorm, clinical_trials
 
 logger = logging.getLogger("biofusion.api.drug")
 
@@ -84,3 +85,32 @@ async def get_drug(drug_id: str):
     cache.set("drug", drug_id, merged)
 
     return merged
+
+
+@router.get("/{drug_id}/trials")
+async def get_drug_trials(
+    drug_id: str,
+    query: Optional[str] = Query(None, description="Direct drug name for search")
+):
+    """
+    Get clinical trials for a drug.
+    Uses the provided query (name) if available, otherwise resolves drug_id.
+    """
+    search_term = query or drug_id
+    
+    # If no direct query and is ChEMBL ID, try to resolve
+    if not query and drug_id.upper().startswith("CHEMBL"):
+        drug_data = cache.get("drug", drug_id)
+        if drug_data and drug_data.get("drug_name"):
+            search_term = drug_data["drug_name"]
+        else:
+            try:
+                details = await chembl.get_drug(drug_id)
+                if details and details.get("pref_name"):
+                    search_term = details["pref_name"]
+            except Exception:
+                pass
+
+    logger.info("Drug Trials Request: ID=%s, Query=%s -> SearchTerm=%s", drug_id, query, search_term)
+    trials = await clinical_trials.get_clinical_trials(search_term)
+    return {"trials": trials}

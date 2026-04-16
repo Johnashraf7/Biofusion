@@ -41,10 +41,24 @@ export const api = {
 
   getDrug: (id) => request(`/drug/${id}`),
 
+  getDrugTrials: (id, query = null) => {
+    const params = query ? `?query=${encodeURIComponent(query)}` : "";
+    return request(`/drug/${id}/trials${params}`);
+  },
+
   getDisease: (id) => request(`/disease/${id}`),
 
-  getNetwork: (gene, limit = 20) =>
-    request(`/network/${gene}?limit=${limit}`),
+  getNetwork: (gene, limit = 20, symbol = null) => {
+    const params = new URLSearchParams({ limit });
+    if (symbol) params.append("symbol", symbol);
+    return request(`/network/${gene}?${params}`);
+  },
+
+  getSynthesis: (type, data) =>
+    request("/synthesis", {
+      method: "POST",
+      body: JSON.stringify({ type, data }),
+    }),
 
   getHealth: () => request("/health"),
 };

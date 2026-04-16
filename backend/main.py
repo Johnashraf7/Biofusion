@@ -133,6 +133,7 @@ from api.variant import router as variant_router
 from api.drug import router as drug_router
 from api.disease import router as disease_router
 from api.network import router as network_router
+from api.synthesis import router as synthesis_router
 
 app.include_router(search_router, prefix="/search", tags=["search"])
 app.include_router(gene_router, prefix="/gene", tags=["gene"])
@@ -140,3 +141,4 @@ app.include_router(variant_router, prefix="/variant", tags=["variant"])
 app.include_router(drug_router, prefix="/drug", tags=["drug"])
 app.include_router(disease_router, prefix="/disease", tags=["disease"])
 app.include_router(network_router, prefix="/network", tags=["network"])
+app.include_router(synthesis_router, prefix="/synthesis", tags=["synthesis"])

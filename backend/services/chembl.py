@@ -88,10 +88,10 @@ async def get_drug(chembl_id: str) -> Optional[Dict]:
     return result
 
 
-async def get_drug_targets(chembl_id: str, limit: int = 10) -> List[Dict]:
+async def get_drug_targets(chembl_id: str, limit: int = 20) -> List[Dict]:
     """
     Get gene targets for a drug by ChEMBL ID.
-    Uses the mechanism endpoint.
+    Uses the mechanism endpoint with parent molecule fallback.
     """
     url = "{}/mechanism.json".format(BASE_URL)
     params = {
@@ -101,16 +101,36 @@ async def get_drug_targets(chembl_id: str, limit: int = 10) -> List[Dict]:
     }
 
     data = await http_client.fetch_json("chembl", url, params=params)
+    
+    # If no mechanisms found for this specific ID, check the parent molecule
+    if not data or not data.get("mechanisms"):
+        logger.info("No direct mechanisms for %s, checking parent molecule...", chembl_id)
+        mol_data = await get_drug(chembl_id)
+        if mol_data:
+            # Note: We'd need the raw molecule data to see parent_molecule_chembl_id
+            # Re-fetching molecule to get parent ID correctly
+            mol_url = "{}/molecule/{}.json".format(BASE_URL, chembl_id)
+            raw_mol = await http_client.fetch_json("chembl", mol_url)
+            parent_id = raw_mol.get("molecule_structures", {}).get("parent_molecule_chembl_id")
+            
+            if parent_id and parent_id != chembl_id:
+                logger.info("Retrying mechanisms with parent ID: %s", parent_id)
+                params["molecule_chembl_id"] = parent_id
+                data = await http_client.fetch_json("chembl", url, params=params)
+
     if not data or "mechanisms" not in data:
         return []
 
     results = []
     for mech in data.get("mechanisms", []):
+        # Improved mapping: Use mechanism_of_action as target_name if target_name is missing
+        t_name = mech.get("target_name") or mech.get("mechanism_of_action", "")
+        
         results.append({
             "mechanism_of_action": mech.get("mechanism_of_action", ""),
             "action_type": mech.get("action_type", ""),
             "target_chembl_id": mech.get("target_chembl_id", ""),
-            "target_name": mech.get("target_name", ""),
+            "target_name": t_name,
             "target_type": mech.get("target_type", ""),
         })
 

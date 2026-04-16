@@ -1,10 +1,15 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { api } from "../api/client";
+import { useWorkbench } from "../context/WorkbenchContext";
 import { LoadingSpinner, WarningBanner, Badge, ScoreBar, DetailRow, EmptyState } from "../components/Shared";
+import AISynthesis from "../components/AISynthesis";
 
 export default function DiseaseView() {
   const { id } = useParams();
+  const { togglePin, isPinned } = useWorkbench();
+  const pinned = isPinned(id, "disease");
+  
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -22,19 +27,32 @@ export default function DiseaseView() {
 
   return (
     <div className="fade-in">
-      <div className="page-header">
-        <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
-          <h1>{data.disease_name || id}</h1>
-          {data.disease_id && <Badge variant="green">{data.disease_id}</Badge>}
+      <div className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+            <h1>{data.disease_name || id}</h1>
+            {data.disease_id && <Badge variant="green">{data.disease_id}</Badge>}
+          </div>
+          {data.description && (
+            <p style={{ color: "var(--text-secondary)", marginTop: "0.5rem", maxWidth: "700px" }}>
+              {data.description.substring(0, 300)}{data.description.length > 300 ? "..." : ""}
+            </p>
+          )}
         </div>
-        {data.description && (
-          <p style={{ color: "var(--text-secondary)", marginTop: "0.5rem", maxWidth: "700px" }}>
-            {data.description.substring(0, 300)}{data.description.length > 300 ? "..." : ""}
-          </p>
-        )}
+        <button 
+          onClick={() => togglePin({ id, type: "disease", name: data.disease_name })}
+          className={pinned ? "btn-active" : "btn-glass"}
+          style={{ fontSize: "0.9rem", padding: "0.5rem 1rem" }}
+        >
+          {pinned ? "★ Pinned" : "☆ Pin to Workbench"}
+        </button>
       </div>
 
       <WarningBanner warnings={data.warnings} />
+
+      <div style={{ marginBottom: "1.5rem" }}>
+        <AISynthesis type="disease" data={data} />
+      </div>
 
       <div className="card-grid">
         {/* ICD-10 Codes */}

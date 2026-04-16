@@ -446,3 +446,59 @@ def detect_query_type(query: str) -> str:
 
     # Default to gene (most common bioinfo query)
     return "gene"
+
+
+# ─── Synthesis Prompt Generation ──────────────────────────────────────────────
+
+
+def generate_gene_synthesis_prompt(data: Dict) -> str:
+    """Generate a prompt for AI synthesis of gene data."""
+    symbol = data.get("gene_symbol", "this gene")
+    name = data.get("gene_name", "")
+    desc = data.get("description", "")
+    protein = data.get("protein", {})
+    diseases = data.get("diseases", [])[:10]
+
+    diseases_str = ", ".join([d.get("disease_name", "Unknown") for d in diseases])
+
+    prompt = (
+        f"Synthesize a brief, professional clinical insight for the gene {symbol} ({name}).\n"
+        f"Description: {desc}\n"
+        f"Protein: {protein.get('name', 'N/A')}. "
+        f"Function: {', '.join(protein.get('functions', []))}\n"
+        f"Associated Diseases: {diseases_str}\n\n"
+        "Provide a 3-sentence summary highlighting its primary biological role and clinical significance."
+    )
+    return prompt
+
+
+def generate_drug_synthesis_prompt(data: Dict) -> str:
+    """Generate a prompt for AI synthesis of drug data."""
+    name = data.get("drug_name", "this drug")
+    targets = data.get("targets", [])[:5]
+    targets_str = ", ".join([t.get("target_name", "Unknown") for t in targets])
+
+    prompt = (
+        f"Synthesize a brief clinical profile for the drug {name}.\n"
+        f"Molecule Type: {data.get('molecule_type', 'N/A')}. "
+        f"Max Clinical Phase: {data.get('max_phase', 0)}.\n"
+        f"Primary Targets: {targets_str}\n\n"
+        "What is the mechanism of action and the primary therapeutic focus for this drug? (2-3 sentences)"
+    )
+    return prompt
+
+
+def generate_disease_synthesis_prompt(data: Dict) -> str:
+    """Generate a prompt for AI synthesis of disease data."""
+    name = data.get("disease_name", "this disease")
+    desc = data.get("description", "")
+    genes = data.get("associated_genes", [])[:10]
+    genes_str = ", ".join([g.get("gene_symbol", "Unknown") for g in genes])
+
+    prompt = (
+        f"Synthesize a summary for the disease {name}.\n"
+        f"Clinical Description: {desc}\n"
+        f"Top Associated Genes: {genes_str}\n\n"
+        "Summarize the pathophysiology and key genetic drivers of this condition. (2-3 sentences)"
+    )
+    return prompt

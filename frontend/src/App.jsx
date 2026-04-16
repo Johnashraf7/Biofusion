@@ -5,6 +5,7 @@ import VariantView from "./pages/VariantView";
 import DrugView from "./pages/DrugView";
 import NetworkView from "./pages/NetworkView";
 import DiseaseView from "./pages/DiseaseView";
+import Workbench from "./components/Workbench";
 import "./index.css";
 
 function NavBar() {
@@ -44,6 +45,7 @@ export default function App() {
           <Route path="/network/:gene" element={<NetworkView />} />
         </Routes>
       </main>
+      <Workbench />
     </BrowserRouter>
   );
 }
