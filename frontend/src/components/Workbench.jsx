@@ -15,155 +15,146 @@ export default function Workbench() {
     if (pinnedItems.length === 0) return;
     setExporting(true);
     
-    try {
+      try {
       const doc = new jsPDF("p", "mm", "a4");
       const pageWidth = doc.internal.pageSize.getWidth();
       const margin = 20;
-      const contentWidth = pageWidth - (margin * 2);
-      
+      const contentWidth = pageWidth - (margin * 2) - 5; // Extra padding
+      let y = 55;
+
+      // --- Centralized PDF Engine v3 (Indestructible) ---
+      const addWrappedText = (text, options = {}) => {
+        const { 
+          fontSize = 10, 
+          isBold = false, 
+          color = [51, 65, 85], 
+          indent = 0, 
+          afterGap = 3
+        } = options;
+
+        // SANITIZE: Aggressive ASCII cleaning + normalize unbreakable strings
+        let cleanText = text.toString()
+            .replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"')
+            .replace(/[\u2013\u2014]/g, "-").replace(/[^\x00-\x7F]/g, "")
+            .replace(/\*\*/g, "").replace(/\*/g, "").replace(/#/g, "")
+            .replace(/[ \t]+/g, " ").trim();
+
+        if (!cleanText) return;
+
+        // Hard character wrapping guard (detect long unbreakable strings like RSIDs/Sequences)
+        const words = cleanText.split(" ");
+        const processedWords = words.map(word => {
+            if (word.length > 35) return word.match(/.{1,35}/g).join(" "); // break massive strings
+            return word;
+        });
+        cleanText = processedWords.join(" ");
+
+        doc.setFont("helvetica", isBold ? "bold" : "normal");
+        doc.setFontSize(fontSize);
+        doc.setTextColor(color[0], color[1], color[2]);
+
+        const lines = doc.splitTextToSize(cleanText, contentWidth - indent);
+        lines.forEach(line => {
+          if (y > 270) {
+            doc.addPage();
+            y = 25;
+            // Immediate re-bind
+            doc.setFont("helvetica", isBold ? "bold" : "normal");
+            doc.setFontSize(fontSize);
+            doc.setTextColor(color[0], color[1], color[2]);
+          }
+          doc.text(line, margin + indent, y);
+          y += (fontSize * 0.45); // Tighter but safe line height
+        });
+        y += afterGap;
+      };
+
       // Cover Page
       doc.setFillColor(15, 23, 42);
       doc.rect(0, 0, pageWidth, 40, "F");
-      
+      doc.setFont("times", "bold");
       doc.setFontSize(24);
       doc.setTextColor(255, 255, 255);
       doc.text("BioFusion Research Dossier", margin, 25);
-      
+      doc.setFont("times", "normal");
       doc.setFontSize(10);
       doc.setTextColor(200, 200, 200);
       doc.text(`Generated on ${new Date().toLocaleString()}`, margin, 32);
 
-      let y = 55;
-      
-      // Fetch full details for all items
+      // Fetch full details
       const fullDataItems = await Promise.all(pinnedItems.map(async (item) => {
-        let details = null;
-        let synthesis = null;
-        let extra = null;
-
+        let details = null, synthesis = null, extra = null;
         try {
           if (item.type === "drug") {
             details = await api.getDrug(item.id);
             extra = await api.getDrugTrials(item.id, details.drug_name);
-          } else if (item.type === "gene") {
-            details = await api.getGene(item.id);
-          } else if (item.type === "disease") {
-            details = await api.getDisease(item.id);
-          } else if (item.type === "variant") {
-            details = await api.getVariant(item.id);
-          }
+          } else if (item.type === "gene") details = await api.getGene(item.id);
+          else if (item.type === "disease") details = await api.getDisease(item.id);
+          else if (item.type === "variant") details = await api.getVariant(item.id);
           
           if (details) {
             const synthRes = await api.getSynthesis(item.type, details);
             synthesis = synthRes.synthesis;
           }
-        } catch (e) {
-          console.error("Error fetching detail for report:", item.id, e);
-        }
-
+        } catch (e) { console.error("Fetch Error:", item.id, e); }
         return { ...item, details, synthesis, extra };
       }));
 
-      // Table of Contents / Summary
-      doc.setFontSize(16);
-      doc.setTextColor(15, 23, 42);
-      doc.text("Executive Summary", margin, y);
-      y += 10;
-      
-      fullDataItems.forEach((item, i) => {
-        if (y > 270) { doc.addPage(); y = 20; }
-        doc.setFontSize(11);
-        doc.setTextColor(50);
-        doc.text(`• [${item.type.toUpperCase()}] ${item.name || item.id}`, margin + 5, y);
-        y += 7;
+      // Executive Summary
+      addWrappedText("Executive Summary", { fontSize: 16, isBold: true, color: [15, 23, 42], afterGap: 5 });
+      fullDataItems.forEach(item => {
+        addWrappedText(`• [${item.type.toUpperCase()}] ${item.name || item.id}`, { indent: 5 });
       });
-
       y += 10;
 
       // Detailed Pages
       for (const item of fullDataItems) {
         doc.addPage();
-        y = 20;
+        y = 25;
         
-        // Header
-        doc.setFontSize(18);
-        doc.setTextColor(59, 130, 246);
-        doc.text(`${item.name || item.id}`, margin, y);
-        
-        doc.setFontSize(9);
-        doc.setTextColor(150);
-        doc.text(`${item.type.toUpperCase()} IDENTIFIER: ${item.id}`, margin, y + 5);
-        y += 15;
+        // Item Header
+        addWrappedText(item.name || item.id, { fontSize: 20, isBold: true, color: [59, 130, 246] });
+        addWrappedText(`${item.type.toUpperCase()} IDENTIFIER: ${item.id}`, { fontSize: 10, color: [100, 116, 139], afterGap: 8 });
 
-        // AI Synthesis Section
+        // AI Synthesis
         if (item.synthesis) {
-          doc.setFillColor(248, 250, 252);
-          doc.rect(margin - 5, y - 5, contentWidth + 10, 35, "F");
-          
-          doc.setFontSize(12);
-          doc.setTextColor(15, 23, 42);
-          doc.text("AI Synthesis & Insights", margin, y);
-          
-          y += 7;
-          doc.setFontSize(10);
-          doc.setTextColor(71, 85, 105);
-          const splitSynth = doc.splitTextToSize(item.synthesis, contentWidth);
-          doc.text(splitSynth, margin, y);
-          y += (splitSynth.length * 5) + 5;
+          addWrappedText("AI Synthesis & Insights", { fontSize: 14, isBold: true, color: [15, 23, 42], afterGap: 2 });
+          item.synthesis.split("\n\n").forEach(para => {
+            addWrappedText(para, { fontSize: 11, afterGap: 4 });
+          });
+          y += 5;
         }
 
-        // Key Properties
-        doc.setFontSize(12);
-        doc.setTextColor(15, 23, 42);
-        doc.text("Key Characteristics", margin, y);
-        y += 7;
-        
-        doc.setFontSize(10);
-        doc.setTextColor(50);
-        
+        // Key Characteristics
+        addWrappedText("Key Characteristics", { fontSize: 14, isBold: true, color: [15, 23, 42], afterGap: 2 });
         if (item.type === "drug" && item.details) {
-          doc.text(`Molecule Type: ${item.details.molecule_type || "N/A"}`, margin, y);
-          y += 5;
-          doc.text(`Max Phase: ${item.details.max_phase || "0"}`, margin, y);
-          y += 5;
-          doc.text(`RxCUI: ${item.details.rxcui || "N/A"}`, margin, y);
-          y += 5;
+          addWrappedText(`Molecule Type: ${item.details.molecule_type || "N/A"}`);
+          addWrappedText(`Max Phase: ${item.details.max_phase || "0"}`);
+          addWrappedText(`RxCUI: ${item.details.rxcui || "N/A"}`);
           
-          // Targets
           if (item.details.targets?.length) {
-            y += 5;
-            doc.text(`Primary Targets (${item.details.targets.length}):`, margin, y);
-            y += 5;
-            doc.setFontSize(9);
+            y += 4;
+            addWrappedText(`Primary Targets (${item.details.targets.length}):`, { isBold: true });
             item.details.targets.slice(0, 5).forEach(t => {
-              doc.text(`- ${t.target_name || t.target_chembl_id}: ${t.action_type || "Unknown Action"}`, margin + 5, y);
-              y += 5;
+              addWrappedText(`- ${t.target_name || t.target_chembl_id}: ${t.action_type || "Unknown"}`, { indent: 5, fontSize: 10 });
             });
           }
         } else if (item.type === "gene" && item.details) {
-          doc.text(`Chromosome: ${item.details.chromosome || "N/A"}`, margin, y);
-          y += 5;
-          doc.text(`Biotype: ${item.details.biotype || "N/A"}`, margin, y);
-          y += 5;
-          doc.text(`Full Name: ${item.details.gene_name || "N/A"}`, margin, y);
-          y += 5;
+          addWrappedText(`Chromosome: ${item.details.chromosome || "N/A"}`);
+          addWrappedText(`Biotype: ${item.details.biotype || "N/A"}`);
+          addWrappedText(`Full Name: ${item.details.gene_name || "N/A"}`);
+        } else if (item.type === "disease" && item.details) {
+            addWrappedText(`Categories: ${item.details.categories?.join(", ") || "N/A"}`);
         }
 
-        // Clinical Data Summary (for Drugs)
+        // Clinical Data
         if (item.extra?.trials?.length) {
-            y += 5;
-            doc.setFontSize(12);
-            doc.setTextColor(15, 23, 42);
-            doc.text("Clinical Investigations Summary", margin, y);
-            y += 7;
-            doc.setFontSize(9);
-            doc.setTextColor(50);
-            doc.text(`Top ${Math.min(3, item.extra.trials.length)} Clinical Trials:`, margin, y);
-            y += 5;
-            item.extra.trials.slice(0, 3).forEach(trial => {
-                doc.text(`• ${trial.nct_id}: ${trial.title.substring(0, 80)}... [${trial.status}]`, margin + 5, y);
-                y += 5;
-            });
+          y += 5;
+          addWrappedText("Clinical Investigations Summary", { fontSize: 13, isBold: true, color: [15, 23, 42], afterGap: 2 });
+          addWrappedText(`Top ${Math.min(3, item.extra.trials.length)} Clinical Trials:`, { fontSize: 9.5, afterGap: 1 });
+          item.extra.trials.slice(0, 3).forEach(trial => {
+            addWrappedText(`• ${trial.nct_id}: ${trial.title} [${trial.status}]`, { indent: 5, fontSize: 9.5 });
+          });
         }
       }
 
